@@ -1,0 +1,18 @@
+# Minimal runtime requirements for backend_product_suitability (extraction-only)
+fastapi>=0.95
+uvicorn[standard]
+sqlalchemy
+PyPDF2
+python-multipart
+python-dotenv
+typing-extensions
+pydantic
+google-generativeai
+pydantic-settings
+pymysql
+bcrypt
+PyJWT
+
+# Optional / dev
+# pytest>=7.0.0  # add for test-suite development
+# alembic>=1.10   # add if you intend to use migrations
