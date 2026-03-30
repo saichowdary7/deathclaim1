@@ -24,6 +24,12 @@ def clean_input(data: dict):
         if v is None:
             continue
 
+        # support both new and old naming in payload
+        if k == 'effective_date':
+            k = 'effective_start_date'
+        if k == 'end_date':
+            k = 'effective_end_date'
+
         # ignore swagger default
         if v == "string":
             continue
@@ -37,6 +43,13 @@ def clean_input(data: dict):
     return cleaned
 
 
+def _add_visible_date_aliases(row: dict):
+    if isinstance(row, dict):
+        row['effective_date'] = row.get('effective_start_date')
+        row['end_date'] = row.get('effective_end_date')
+    return row
+
+
 # ✅ GET ALL
 def get_all_checklists():
     conn = get_connection()
@@ -47,7 +60,8 @@ def get_all_checklists():
                 WHERE is_deleted = 0
                 ORDER BY id ASC
             """)
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+            return [_add_visible_date_aliases(r) for r in rows]
     except Exception as e:
         return {"error": str(e)}
     finally:
@@ -63,7 +77,8 @@ def get_checklist_by_id(checklist_id: int):
                 SELECT * FROM checklist_masters
                 WHERE id=%s AND is_deleted=0
             """, (checklist_id,))
-            return cursor.fetchone()
+            row = cursor.fetchone()
+            return _add_visible_date_aliases(row)
     except Exception as e:
         return {"error": str(e)}
     finally:

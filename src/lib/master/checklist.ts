@@ -9,6 +9,8 @@ export interface Checklist {
   when_required?: string;
   effective_start_date?: string;
   effective_end_date?: string;
+  effective_date?: string;
+  end_date?: string;
   checklist_version?: string;
   status?: 'ACTIVE' | 'INACTIVE' | 'DEPRECATED';
   created_by?: string;

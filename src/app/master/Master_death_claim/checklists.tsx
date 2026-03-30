@@ -15,6 +15,8 @@ const COLUMNS = [
   { key: 'checklist_category', label: 'Checklist category' },
   { key: 'checklist_description', label: 'Description' },
   { key: 'when_required', label: 'When required' },
+  { key: 'effective_start_date', label: 'Effective Date' },
+  { key: 'effective_end_date', label: 'End Date' },
   { key: 'status', label: 'Status' },
 ];
 
@@ -87,6 +89,9 @@ export default function Tab1() {
   const [selectedRow, setSelectedRow] = useState<Checklist | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -108,6 +113,30 @@ export default function Tab1() {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return '-';
+    // Attempt to parse yyyy-mm-dd, yyyy-mm-ddTHH:MM:SS, or Date string
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      return `${mm}-${dd}-${yyyy}`;
+    }
+    const parts = value.split('-');
+    if (parts.length >= 3) {
+      const [y, m, d] = parts;
+      const day = d.length > 2 ? d.slice(0, 2) : d;
+      return `${m.padStart(2, '0')}-${day.padStart(2, '0')}-${y}`;
+    }
+    return value;
+  };
+
+  const formatStatus = (status?: string | null) => {
+    if (!status) return '-';
+    return `${status.slice(0, 1).toUpperCase()}${status.slice(1).toLowerCase()}`;
   };
 
   const handleDelete = async (id: number) => {
@@ -159,7 +188,9 @@ export default function Tab1() {
     const header = COLUMNS.map(c => c.label).join(',');
     const rows = data.map(r =>
       [r.id, `"${r.checklist_name}"`, r.checklist_type, r.checklist_category,
-      `"${r.checklist_description}"`, r.when_required, r.status].join(',')
+      `"${r.checklist_description}"`, r.when_required,
+      formatDate(r.effective_start_date), formatDate(r.effective_end_date),
+      formatStatus(r.status)].join(',')
     );
     const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -249,7 +280,7 @@ export default function Tab1() {
             onChange={() => showToast('File uploaded successfully.')} />
 
           {([
-            { label: 'Upload excel', icon: <UploadIcon />, onClick: () => fileRef.current?.click(), dark: false },
+            { label: 'Upload excel', icon: <UploadIcon />, onClick: () => setShowUploadModal(true), dark: false },
             { label: 'Template', icon: <TemplateIcon />, onClick: handleTemplate, dark: false },
             { label: 'Export', icon: <ExportIcon />, onClick: handleExport, dark: false },
             { label: 'Add new checklist', icon: <PlusIcon />, onClick: () => setShowAddModal(true), dark: true },
@@ -306,13 +337,15 @@ export default function Tab1() {
                       {row.checklist_description}
                     </td>
                     <td style={tdBase}>{row.when_required}</td>
+                    <td style={tdBase}>{formatDate(row.effective_start_date)}</td>
+                    <td style={tdBase}>{formatDate(row.effective_end_date)}</td>
                     <td style={{ ...tdBase }}>
                       <span style={{
                         display: 'inline-block', padding: '3px 10px',
                         fontSize: 12, fontWeight: 600, borderRadius: 20,
                         color: st.color, background: st.bg, border: `1px solid ${st.border}`,
                       }}>
-                        {row.status}
+                        {formatStatus(row.status)}
                       </span>
                     </td>
 
@@ -416,8 +449,8 @@ export default function Tab1() {
                     { l: 'Category', n: 'checklist_category', v: selectedRow.checklist_category },
                     { l: 'When Required', n: 'when_required', v: selectedRow.when_required },
                     { l: 'Checklist Version', n: 'checklist_version', v: selectedRow.checklist_version },
-                    { l: 'Effective Start Date', n: 'effective_start_date', v: selectedRow.effective_start_date, type: 'date' },
-                    { l: 'Effective End Date', n: 'effective_end_date', v: selectedRow.effective_end_date, type: 'date' },
+                    { l: 'Effective Date', n: 'effective_start_date', v: selectedRow.effective_start_date, type: 'date' },
+                    { l: 'End Date', n: 'effective_end_date', v: selectedRow.effective_end_date, type: 'date' },
                     { l: 'Updated By', n: 'updated_by', v: selectedRow.updated_by },
                     { l: 'Status', n: 'status', v: selectedRow.status, isStatus: true },
                     { l: 'Description', n: 'checklist_description', v: selectedRow.checklist_description, span2: true, isTextarea: true },
@@ -483,8 +516,8 @@ export default function Tab1() {
                     { l: 'Category', n: 'checklist_category', p: 'Claim Processing' },
                     { l: 'When Required', n: 'when_required', p: 'Always' },
                     { l: 'Checklist Version', n: 'checklist_version', p: 'V1' },
-                    { l: 'Effective Start Date', n: 'effective_start_date', p: 'YYYY-MM-DD', type: 'date' },
-                    { l: 'Effective End Date', n: 'effective_end_date', p: 'YYYY-MM-DD', type: 'date' },
+                    { l: 'Effective Date', n: 'effective_start_date', p: 'YYYY-MM-DD', type: 'date' },
+                    { l: 'End Date', n: 'effective_end_date', p: 'YYYY-MM-DD', type: 'date' },
                     { l: 'Status', n: 'status', p: 'ACTIVE', isStatus: true },
                   ].map(item => (
                     <div key={item.l} style={{ gridColumn: item.span2 ? 'span 2' : 'auto' }}>
@@ -544,6 +577,84 @@ export default function Tab1() {
                 style={{ flex: 1, padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
               <button onClick={() => handleDelete(confirmDelete)}
                 style={{ flex: 1, padding: '10px', borderRadius: 6, border: 'none', background: '#b91c1c', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Delete Record</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Excel Modal */}
+      {showUploadModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', zIndex: 99999, backdropFilter: 'blur(3px)'
+        }} onClick={() => setShowUploadModal(false)}>
+          <div style={{
+            background: '#fff', width: '95%', maxWidth: 560, borderRadius: 16,
+            boxShadow: '0 20px 35px -10px rgba(0,0,0,0.2)', textAlign: 'left', overflow: 'hidden'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Upload Excel File</h3>
+                <button onClick={() => setShowUploadModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 21, color: '#64748b' }}>&times;</button>
+              </div>
+              {/* <p style={{ margin: '10px 0 0', fontSize: 14, color: '#475569' }}>
+                Upload an Excel or CSV file to bulk import checklist data. Make sure your file follows the template format. Scheme code: <strong>SCM001</strong>
+              </p> */}
+            </div>
+
+            <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setUploadedFile(file);
+                  showToast(`Selected file: ${file.name}`);
+                }
+              }}
+            />
+
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                  setUploadedFile(file);
+                  showToast(`Selected file: ${file.name}`);
+                }
+              }}
+              onClick={() => fileRef.current?.click()}
+              style={{
+                margin: '22px', padding: '26px', border: `2px dashed ${dragActive ? '#22c55e' : '#9ca3af'}`,
+                borderRadius: 12, background: dragActive ? '#f0fdf4' : '#f8fafc', cursor: 'pointer', textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 10, color: '#60a5fa' }}><UploadIcon /></div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#0f172a' }}>Drop files here or click to browse</div>
+              <div style={{ marginTop: 6, fontSize: 13, color: '#64748b' }}>Supports .xlsx, .xls, .csv</div>
+              {uploadedFile && (
+                <div style={{ marginTop: 10, fontSize: 13, color: '#0f172a' }}><strong>{uploadedFile.name}</strong> selected</div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 22px 20px', borderTop: '1px solid #e2e8f0' }}>
+              <button onClick={() => { setUploadedFile(null); setShowUploadModal(false); }}
+                style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #0f172a', background: '#fff', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => {
+                if (!uploadedFile) {
+                  showToast('Please choose a file first');
+                  return;
+                }
+                showToast(`Uploading ${uploadedFile.name}...`);
+                // TODO: add actual upload API call here
+                setShowUploadModal(false);
+                setUploadedFile(null);
+              }}
+                style={{ padding: '10px 14px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>
+                Upload File
+              </button>
             </div>
           </div>
         </div>
